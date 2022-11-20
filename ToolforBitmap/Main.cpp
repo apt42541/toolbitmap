@@ -19,6 +19,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h";
 
+// test
+
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;

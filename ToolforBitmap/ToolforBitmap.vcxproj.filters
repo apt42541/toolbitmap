@@ -72,9 +72,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="imgui\imgui.ini">
-      <Filter>imgui</Filter>
-    </None>
-  </ItemGroup>
 </Project>
