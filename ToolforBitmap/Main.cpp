@@ -185,7 +185,7 @@ void snapshot() {
 		ImGui::Image( img->Texture, ImVec2( displayHeight * s, displayHeight ) );
 		ImVec2 imagePos = ImGui::GetItemRectMin();
 		ImVec2 imageSize = ImGui::GetItemRectSize();
-		//test comiit
+		//test comiit22
 		if (ImGui::IsItemHovered()) {
 
 			if (!cropState && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
