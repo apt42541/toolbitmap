@@ -1,52 +1,32 @@
-﻿// Dear ImGui: standalone example application for DirectX 9
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_dx9.h"
-#include "imgui/imgui_impl_win32.h"
-#include "imgui/imgui_internal.h"
-#include <d3d9.h>
-#include <d3dx9.h>
-#include <tchar.h>
-#include <dwmapi.h>
-#include <tchar.h>
-#pragma comment(lib, "d3d9.lib")
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h";
-
-// test
+﻿#include "Header.h"
 
 // Data
 static LPDIRECT3D9              g_pD3D = NULL;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
 static D3DPRESENT_PARAMETERS    g_d3dpp ={};
+static HWND	g_LDPlayer;
+static HWND g_LDPlayerRender;
+static shared_ptr<ImageData> img;
+static Mat target;
+static bool test = 0;
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D( HWND hWnd );
 void CleanupDeviceD3D();
 void ResetDevice();
-LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
-using namespace std;
-using namespace cv;
-static LPCWSTR title = L"LDPlayer(64)";
-auto lpPlayerHWND = FindWindowW( L"LDPlayerMainFrame", title );
-auto ldPlayerCrtlHWND = FindWindowExW( lpPlayerHWND, 0, L"RenderWindow", L"TheRender" );
-HWND newHwnd = FindWindow( NULL, title );;
-Mat getMat() {
 
-	HDC deviceContext = GetDC( newHwnd );
+LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
+
+Mat getMat(HWND hWnd) {
+
+	HDC deviceContext = GetDC( hWnd );
 	HDC memoryDeviceContext = CreateCompatibleDC( deviceContext );
 
-	RECT windowRect;
-	GetWindowRect( newHwnd, &windowRect );
+	RECT clientRect;
+	GetClientRect( hWnd, &clientRect );
 
-	int height = windowRect.bottom;
-	int width = windowRect.right;
+	int height = clientRect.bottom;
+	int width = clientRect.right;
 
 	HBITMAP bitmap = CreateCompatibleBitmap( deviceContext, width, height );
 
@@ -82,15 +62,10 @@ Mat getMat() {
 	//clean up!
 	DeleteObject( bitmap );
 	DeleteDC( memoryDeviceContext ); //delete not release!
-	ReleaseDC( newHwnd, deviceContext );
+	ReleaseDC( hWnd, deviceContext );
 
 	return mat;
 }
-struct ImageData {
-	LONG Width, Height;
-	vector<BYTE> Data;
-	PDIRECT3DTEXTURE9 Texture;
-};
 
 std::shared_ptr<ImageData> Load_Image( const string& ImageFile ) {
 	int image_width = 0;
@@ -134,28 +109,25 @@ std::shared_ptr<ImageData> Load_Image( const string& ImageFile ) {
 	return out;
 }
 
-shared_ptr<ImageData> img;
-Mat target;
-static bool test = 0;
-void tool()
-{
-	auto drawList = ImGui::GetBackgroundDrawList();
-	static float f = 0.0f;
-	static int counter = 0;
-
+void tool() {
 	ImGui::Begin( "Hello, world!" );
 
 	static char buf[100] = "LDPlayer(64)";
-	if (ImGui::InputText( "window string", buf, IM_ARRAYSIZE( buf ) )) {
+
+	/*if (ImGui::InputText( "window string", buf, IM_ARRAYSIZE( buf ) )) {
 		newHwnd = FindWindowA( NULL, buf );
-	}
+	}*/
 
-	if (ImGui::Button( "test", ImVec2( 0, 0 ) )) {
-
-		target = getMat();
+	while (ImGui::Button( "Screenshot", ImVec2( 100.0f, 100.0f ) )) {
+		g_LDPlayer       = FindWindowW(L"LDPlayerMainFrame", NULL);
+		if (!g_LDPlayer || IsIconic(g_LDPlayer)) { MessageBeep(0);  break; }
+		g_LDPlayerRender = FindWindowExW(g_LDPlayer, 0, L"RenderWindow", L"TheRender");
+		if (!g_LDPlayerRender) { MessageBeep(0);  break; }
+		target           = getMat(g_LDPlayerRender);
 		imwrite( "out.jpg", target );
-		img = Load_Image( "out.jpg" );
+		img  = Load_Image( "out.jpg" );
 		test = true;
+		break;
 	}
 
 	ImGui::End();
@@ -163,48 +135,52 @@ void tool()
 
 
 void snapshot() {
-
-	static float f = 0.0f;
-	static int counter = 0;
-
 	static ImVec2 crop_min{};
 	static ImVec2 crop_max{};
-	static int cropState = 0;
-	static bool cropDone = false;
-	static bool visible = true;
-	float Aspect = 3.0f / 4.0f;
-	float displayWidth = 1024;
-	float displayHeight = displayWidth * Aspect;
-	ImVec2 displaySize( displayWidth, displayHeight );
+	static int cropState       = 0;
+	static bool cropDone       = false;
+	static float Aspect        = 16.0f / 9.0f;
+	static float displayHeight = 540.0f;
+	static float displayWidth  = displayHeight * Aspect;
 
-	ImGui::Begin( "test1" );
+	auto& style                = ImGui::GetStyle();
+	bool onClose               = true;
+	float imageAspect          = (float)img->Width / (float)img->Height;
+	float imageWidth           = displayHeight * imageAspect;
+	ImVec2 displaySize( displayWidth, displayHeight );
+	ImVec2 imageSize( imageAspect > Aspect ? displayWidth : imageWidth, displayHeight );
+
+	ImGui::SetNextWindowContentSize(displaySize);
+
+	if (!ImGui::Begin("Result", &onClose, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::End();
+		return;
+	}
+
 	auto drawList = ImGui::GetWindowDrawList();
-	ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
 
 	if (test && img) {
-
-
-		ImGui::Image( img->Texture, ImVec2( img->Width, img->Height ) );
-		ImVec2 imagePos = ImGui::GetItemRectMin();
-		ImVec2 imageSize = ImGui::GetItemRectSize();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + fabs(displaySize.x - imageSize.x) * .5f);
+		ImGui::Image( img->Texture, imageSize );
+		ImVec2 pos  = ImGui::GetItemRectMin();
+		ImVec2 size = ImGui::GetItemRectSize();
 
 		if (ImGui::IsItemHovered()) {
-
 			if (!cropState && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
-				crop_min = ImGui::GetMousePos();
-				cropState = 1;
+				crop_min   = ImGui::GetMousePos() - pos;
+				cropState  = 1;
 			}
 			else if (cropState && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
-				crop_max = ImGui::GetMousePos();
-				cropState = 0;
-				cropDone = true;
+				crop_max   = ImGui::GetMousePos() - pos;
+				cropState  = 0;
+				cropDone   = true;
 
-				auto min = crop_min - imagePos;
-				auto max = crop_max - imagePos;
-				ImVec2 uv0 = min / imageSize;
-				ImVec2 uv1 = max / imageSize;
-				ImVec2 s0 = uv0 * ImVec2( img->Width, img->Height );
-				auto s1 = uv1 * ImVec2( img->Width, img->Height );
+				auto min   = ImVec2(std::min(crop_min.x, crop_max.x), std::min(crop_min.y, crop_max.y));
+				auto max   = ImVec2(std::max(crop_min.x, crop_max.x), std::max(crop_min.y, crop_max.y));
+				auto uv0   = min / size;
+				auto uv1   = max / size;
+				auto s0    = uv0 * ImVec2( (float)img->Width, (float)img->Height );
+				auto s1    = uv1 * ImVec2( (float)img->Width, (float)img->Height );
 				imwrite( "p.jpg", target( Rect( s0.x, s0.y, s1.x - s0.x, s1.y - s0.y ) ) );
 			}
 		}
@@ -212,15 +188,15 @@ void snapshot() {
 			cropState = 0;
 		}
 
-		if (cropState == 1)
-		{
-			drawList->AddRect( crop_min, ImGui::GetMousePos(), 0xff0000ff );
-		}
-		else if (cropDone)
-		{
-			drawList->AddRect( crop_min, crop_max, 0xff00ff00 );
+		if (cropState == 1) {
+			drawList->AddRect(pos + crop_min, ImGui::GetMousePos(), 0xff0000ff);
+		} else if (cropDone) {
+			drawList->AddRect(pos + crop_min, pos + crop_max, 0xff00ff00);
 		}
 	}
+
+	if (!onClose)
+		test = 0;
 
 	ImGui::End();
 }
@@ -261,10 +237,12 @@ int main( int, char** )
 
 	// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 	ImGuiStyle& style = ImGui::GetStyle();
+
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
 	}
 
 	// Setup Platform/Renderer backends
@@ -281,9 +259,6 @@ int main( int, char** )
 	MSG msg;
 
 	while (!done) {
-		// Poll and handle messages (inputs, window resize, etc.)
-		// See the WndProc() function below for our to dispatch events to the Win32 backend.
-
 		while (::PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE )) {
 			::TranslateMessage( &msg );
 			::DispatchMessage( &msg );
@@ -294,23 +269,15 @@ int main( int, char** )
 		if (done)
 			break;
 
-		// Start the Dear ImGui frame
 		ImGui_ImplDX9_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-
-
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 		tool();
 
 		if (test && img)
-		{
 			snapshot();
-		}
 
-		// Rendering
 		ImGui::EndFrame();
 		g_pd3dDevice->SetRenderState( D3DRS_ZENABLE, FALSE );
 		g_pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
