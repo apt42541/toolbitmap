@@ -10,6 +10,17 @@ static shared_ptr<ImageData> img;
 static Mat target;
 static bool test = 0;
 
+
+//hwnd varaible 
+static HWND g_GameHwnd;
+static HWND g_ControlHwnd;
+static LPCWSTR title = L"LDPlayer(64)";
+HWND newhwnd;
+HWND lpPlayerHWND;
+HWND ldPlayerCrtlHWND;
+
+
+
 // Forward declarations of helper functions
 bool CreateDeviceD3D( HWND hWnd );
 void CleanupDeviceD3D();
@@ -17,7 +28,7 @@ void ResetDevice();
 
 LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
-Mat getMat(HWND hWnd) {
+Mat getMat( HWND hWnd ) {
 
 	HDC deviceContext = GetDC( hWnd );
 	HDC memoryDeviceContext = CreateCompatibleDC( deviceContext );
@@ -119,11 +130,11 @@ void tool() {
 	}*/
 
 	while (ImGui::Button( "Screenshot", ImVec2( 100.0f, 100.0f ) )) {
-		g_LDPlayer       = FindWindowW(L"LDPlayerMainFrame", NULL);
-		if (!g_LDPlayer || IsIconic(g_LDPlayer)) { MessageBeep(0);  break; }
-		g_LDPlayerRender = FindWindowExW(g_LDPlayer, 0, L"RenderWindow", L"TheRender");
-		if (!g_LDPlayerRender) { MessageBeep(0);  break; }
-		target           = getMat(g_LDPlayerRender);
+		g_LDPlayer       = FindWindowW( L"LDPlayerMainFrame", NULL );
+		if (!g_LDPlayer || IsIconic( g_LDPlayer )) { MessageBeep( 0 );  break; }
+		g_LDPlayerRender = FindWindowExW( g_LDPlayer, 0, L"RenderWindow", L"TheRender" );
+		if (!g_LDPlayerRender) { MessageBeep( 0 );  break; }
+		target           = getMat( g_LDPlayerRender );
 		imwrite( "out.jpg", target );
 		img  = Load_Image( "out.jpg" );
 		test = true;
@@ -136,8 +147,11 @@ void tool() {
 
 void snapshot() {
 	static ImVec2 crop_min{};
+	static ImVec2 crop_min2{};
 	static ImVec2 crop_max{};
+
 	static int cropState       = 0;
+	static ImVec2 m_pos        ={};
 	static bool cropDone       = false;
 	static float Aspect        = 16.0f / 9.0f;
 	static float displayHeight = 540.0f;
@@ -145,14 +159,14 @@ void snapshot() {
 
 	auto& style                = ImGui::GetStyle();
 	bool onClose               = true;
-	float imageAspect          = (float)img->Width / (float)img->Height;
+	float imageAspect          = ( float )img->Width / ( float )img->Height;
 	float imageWidth           = displayHeight * imageAspect;
 	ImVec2 displaySize( displayWidth, displayHeight );
 	ImVec2 imageSize( imageAspect > Aspect ? displayWidth : imageWidth, displayHeight );
 
-	ImGui::SetNextWindowContentSize(displaySize);
+	ImGui::SetNextWindowContentSize( displaySize );
 
-	if (!ImGui::Begin("Result", &onClose, ImGuiWindowFlags_AlwaysAutoResize)) {
+	if (!ImGui::Begin( "Result", &onClose, ImGuiWindowFlags_AlwaysAutoResize )) {
 		ImGui::End();
 		return;
 	}
@@ -160,39 +174,51 @@ void snapshot() {
 	auto drawList = ImGui::GetWindowDrawList();
 
 	if (test && img) {
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + fabs(displaySize.x - imageSize.x) * .5f);
+		ImGui::SetCursorPosX( ImGui::GetCursorPosX() + fabs( displaySize.x - imageSize.x ) * .5f );
 		ImGui::Image( img->Texture, imageSize );
 		ImVec2 pos  = ImGui::GetItemRectMin();
 		ImVec2 size = ImGui::GetItemRectSize();
 
 		if (ImGui::IsItemHovered()) {
-			if (!cropState && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
+			if (cropState == 2 && ImGui::IsMouseClicked( ImGuiMouseButton_Right, false ))
+				cropState = 0;
+			if (cropState == 0 && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
 				crop_min   = ImGui::GetMousePos() - pos;
 				cropState  = 1;
 			}
-			else if (cropState && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
+			else if (cropState == 1 && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
 				crop_max   = ImGui::GetMousePos() - pos;
 				cropState  = 0;
 				cropDone   = true;
 
-				auto min   = ImVec2(std::min(crop_min.x, crop_max.x), std::min(crop_min.y, crop_max.y));
-				auto max   = ImVec2(std::max(crop_min.x, crop_max.x), std::max(crop_min.y, crop_max.y));
+				auto min   = ImVec2( std::min( crop_min.x, crop_max.x ), std::min( crop_min.y, crop_max.y ) );
+				auto max   = ImVec2( std::max( crop_min.x, crop_max.x ), std::max( crop_min.y, crop_max.y ) );
 				auto uv0   = min / size;
 				auto uv1   = max / size;
-				auto s0    = uv0 * ImVec2( (float)img->Width, (float)img->Height );
-				auto s1    = uv1 * ImVec2( (float)img->Width, (float)img->Height );
+				auto s0    = uv0 * ImVec2( ( float )img->Width, ( float )img->Height );
+				auto s1    = uv1 * ImVec2( ( float )img->Width, ( float )img->Height );
 				imwrite( "p.jpg", target( Rect( s0.x, s0.y, s1.x - s0.x, s1.y - s0.y ) ) );
+				cropState = 2;
 			}
-		}
-		else {
-			cropState = 0;
+			else if (cropState == 2 && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
+				crop_min2   = ImGui::GetMousePos() - pos;
+
+				auto min   = ImVec2( crop_min2.x, crop_min2.y );
+				auto uv0   = min / size;
+				auto s0    = uv0 * ImVec2( ( float )img->Width, ( float )img->Height );
+				AU3_ControlClickByHandle( lpPlayerHWND, ldPlayerCrtlHWND, L"Left", 2, s0.x, s0.y );
+			}
+
+
 		}
 
 		if (cropState == 1) {
-			drawList->AddRect(pos + crop_min, ImGui::GetMousePos(), 0xff0000ff);
-		} else if (cropDone) {
-			drawList->AddRect(pos + crop_min, pos + crop_max, 0xff00ff00);
+			drawList->AddRect( pos + crop_min, ImGui::GetMousePos(), 0xff0000ff );
 		}
+		else if (cropDone && cropState == 2) {
+			drawList->AddRect( pos + crop_min, pos + crop_max, 0xff00ff00 );
+		}
+
 	}
 
 	if (!onClose)
@@ -203,8 +229,15 @@ void snapshot() {
 // Main code
 int main( int, char** )
 {
-	// Create application window
+	AU3_Opt( L"MouseCoordMode", 2 );
+	AU3_Opt( L"PixelCoordMode", 2 );
+
+	newhwnd = FindWindow( NULL, title );
+	lpPlayerHWND = FindWindowW( L"LDPlayerMainFrame", title );
+	ldPlayerCrtlHWND = FindWindowExW( lpPlayerHWND, 0, L"RenderWindow", L"TheRender" );
+
 	//ImGui_ImplWin32_EnableDpiAwareness();
+	SetProcessDPIAware();
 	WNDCLASSEXW wc ={ sizeof( wc ), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle( NULL ), NULL, NULL, NULL, NULL, L"ImGui Example", NULL };
 	::RegisterClassExW( &wc );
 	HWND hwnd = ::CreateWindowW( wc.lpszClassName, L"Dear ImGui DirectX9 Example", WS_POPUP, 0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL );

@@ -23,3 +23,12 @@
 // STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h";
+
+// Autoit
+#include "autoit/AutoItX3_DLL.h"
+
+#ifndef _WIN64
+#   pragma comment(lib, "autoit/AutoItX3_DLL.lib")
+#else
+#   pragma comment(lib, "autoit/AutoItX3_x64_DLL.lib")
+#endif
