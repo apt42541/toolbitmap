@@ -301,6 +301,23 @@ int main( int, char** ) {
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
+		// open Dialog Simple
+		if (ImGui::Button("Open File Dialog"))
+			ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", ".");
+
+		// display
+		if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+			// action if OK
+			if (ImGuiFileDialog::Instance()->IsOk()) {
+				std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+				std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+				// action
+			}
+
+			// close
+			ImGuiFileDialog::Instance()->Close();
+		}
+
 		tool();
 
 		if (test && img)

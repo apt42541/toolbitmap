@@ -29,3 +29,6 @@
 
 // Autoit
 #include "autoit/AutoItX3_DLL.h"
+
+// ImGuiFileDialog
+#include "ImGuiFileDialog/ImGuiFileDialog.h"

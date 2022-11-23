@@ -13,8 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="imgui">
+    <Filter Include="3rdparty">
+      <UniqueIdentifier>{900ffa81-4260-4fef-a59e-fbae0420fe98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty\imgui">
       <UniqueIdentifier>{d54467d1-07da-4e23-8b64-6186cffb9d15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty\ImGuiFileDialog">
+      <UniqueIdentifier>{192f2be5-dbf3-4933-88d3-9172edbd8e4a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -22,51 +28,66 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_demo.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_draw.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_impl_dx9.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_tables.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_widgets.cpp">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiFileDialog\ImGuiFileDialog.cpp">
+      <Filter>3rdparty\ImGuiFileDialog</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_impl_dx9.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_impl_win32.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_internal.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imstb_rectpack.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imstb_textedit.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imstb_truetype.h">
-      <Filter>imgui</Filter>
+      <Filter>3rdparty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialog\ImGuiFileDialog.h">
+      <Filter>3rdparty\ImGuiFileDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialog\ImGuiFileDialogConfig.h">
+      <Filter>3rdparty\ImGuiFileDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Header.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
