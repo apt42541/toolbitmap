@@ -1,5 +1,4 @@
 #pragma once
-#pragma comment(lib, "d3d9.lib")
 
 // Windows API
 #include <Windows.h>
@@ -7,6 +6,10 @@
 #include <tchar.h>
 #include <dwmapi.h>
 #include <tchar.h>
+
+// STL
+#include <memory>
+#include <string>
 
 // OpenCV
 #include "opencv2/imgcodecs.hpp"
@@ -26,9 +29,3 @@
 
 // Autoit
 #include "autoit/AutoItX3_DLL.h"
-
-#ifndef _WIN64
-#   pragma comment(lib, "autoit/AutoItX3_DLL.lib")
-#else
-#   pragma comment(lib, "autoit/AutoItX3_x64_DLL.lib")
-#endif

@@ -14,8 +14,6 @@ static bool test = 0;
 //hwnd varaible 
 static HWND g_GameHwnd;
 static HWND g_ControlHwnd;
-static LPCWSTR title = L"LDPlayer(64)";
-HWND newhwnd;
 HWND lpPlayerHWND;
 HWND ldPlayerCrtlHWND;
 
@@ -227,17 +225,14 @@ void snapshot() {
 	ImGui::End();
 }
 // Main code
-int main( int, char** )
-{
+int main( int, char** ) {
 	AU3_Opt( L"MouseCoordMode", 2 );
 	AU3_Opt( L"PixelCoordMode", 2 );
 
-	newhwnd = FindWindow( NULL, title );
-	lpPlayerHWND = FindWindowW( L"LDPlayerMainFrame", title );
+	lpPlayerHWND = FindWindowW( L"LDPlayerMainFrame", 0 );
 	ldPlayerCrtlHWND = FindWindowExW( lpPlayerHWND, 0, L"RenderWindow", L"TheRender" );
 
-	//ImGui_ImplWin32_EnableDpiAwareness();
-	SetProcessDPIAware();
+	ImGui_ImplWin32_EnableDpiAwareness();
 	WNDCLASSEXW wc ={ sizeof( wc ), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle( NULL ), NULL, NULL, NULL, NULL, L"ImGui Example", NULL };
 	::RegisterClassExW( &wc );
 	HWND hwnd = ::CreateWindowW( wc.lpszClassName, L"Dear ImGui DirectX9 Example", WS_POPUP, 0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL );
