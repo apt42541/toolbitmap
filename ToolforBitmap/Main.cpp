@@ -9,8 +9,9 @@ static HWND g_LDPlayerRender;
 static shared_ptr<ImageData> img;
 static Mat target;
 static bool test = 0;
-
-
+static LPCWSTR fullpath = L"Wating getting path";
+char buff[1024] ={ 0 };
+char file[1024] ={ 0 };
 //hwnd varaible 
 static HWND g_GameHwnd;
 static HWND g_ControlHwnd;
@@ -26,55 +27,6 @@ void ResetDevice();
 
 LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
-Mat getMat( HWND hWnd ) {
-
-	HDC deviceContext = GetDC( hWnd );
-	HDC memoryDeviceContext = CreateCompatibleDC( deviceContext );
-
-	RECT clientRect;
-	GetClientRect( hWnd, &clientRect );
-
-	int height = clientRect.bottom;
-	int width = clientRect.right;
-
-	HBITMAP bitmap = CreateCompatibleBitmap( deviceContext, width, height );
-
-	SelectObject( memoryDeviceContext, bitmap );
-
-	/*   int x           = x1;
-	   int y           = y2;
-	   int width2      = cx-x;
-	   int height2       = cy-y;*/
-	   //copy data into bitmap
-	BitBlt( memoryDeviceContext, 0, 0, width, height, deviceContext, 0, 0, SRCCOPY );
-
-
-	//specify format by using bitmapinfoheader!
-	BITMAPINFOHEADER bi;
-	bi.biSize = sizeof( BITMAPINFOHEADER );
-	bi.biWidth = width;
-	bi.biHeight = -height;
-	bi.biPlanes = 1;
-	bi.biBitCount = 32;
-	bi.biCompression = BI_RGB;
-	bi.biSizeImage = 0; //because no compression
-	bi.biXPelsPerMeter = 1; //we
-	bi.biYPelsPerMeter = 2; //we
-	bi.biClrUsed = 3; //we ^^
-	bi.biClrImportant = 4; //still we
-
-	cv::Mat mat = cv::Mat( height, width, CV_8UC4 ); // 8 bit unsigned ints 4 Channels -> RGBA
-
-	//transform data and store into mat.data
-	GetDIBits( memoryDeviceContext, bitmap, 0, height, mat.data, ( BITMAPINFO* )&bi, DIB_RGB_COLORS );
-
-	//clean up!
-	DeleteObject( bitmap );
-	DeleteDC( memoryDeviceContext ); //delete not release!
-	ReleaseDC( hWnd, deviceContext );
-
-	return mat;
-}
 
 std::shared_ptr<ImageData> Load_Image( const string& ImageFile ) {
 	int image_width = 0;
@@ -118,16 +70,79 @@ std::shared_ptr<ImageData> Load_Image( const string& ImageFile ) {
 	return out;
 }
 
+void getFullPath() {
+	HRESULT hr = CoInitializeEx( NULL, COINIT_APARTMENTTHREADED |
+		COINIT_DISABLE_OLE1DDE );
+	if (SUCCEEDED( hr ))
+	{
+		IFileOpenDialog* pFileOpen;
+		// Create the FileOpenDialog object.
+		hr = CoCreateInstance( CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast< void** >( &pFileOpen ) );
+
+
+		if (SUCCEEDED( hr ))
+		{
+			DWORD dwOptions;
+			// Show the Open dialog box.
+			if (SUCCEEDED( pFileOpen->GetOptions( &dwOptions ) ))
+			{
+				pFileOpen->SetOptions( dwOptions | FOS_PICKFOLDERS );
+			}
+			hr = pFileOpen->Show( NULL );
+
+			if (SUCCEEDED( hr ))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult( &pItem );
+				if (SUCCEEDED( hr ))
+				{
+					PWSTR pszFilePath;
+					hr = pItem->GetDisplayName( SIGDN_FILESYSPATH, &pszFilePath );
+
+					// Display the file name to the user.
+					if (SUCCEEDED( hr ))
+					{
+						MessageBoxW( NULL, pszFilePath, L"Folder Pick", MB_OK );
+						CoTaskMemFree( pszFilePath );
+						fullpath = pszFilePath;
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
+	}
+}
 void tool() {
-	ImGui::Begin( "Hello, world!" );
 
-	static char buf[100] = "LDPlayer(64)";
+	static bool init{};
+	auto& io    = ImGui::GetIO();
+	auto& style = ImGui::GetStyle();
 
-	/*if (ImGui::InputText( "window string", buf, IM_ARRAYSIZE( buf ) )) {
-		newHwnd = FindWindowA( NULL, buf );
-	}*/
+	if (!init) {
+		ImGui::SetNextWindowPos( ImVec2{} );
+		ImGui::SetNextWindowSize( ImVec2( 350, ImGui::GetIO().DisplaySize.y ) );
+		init = true;
+	}
+
+	ImGui::Begin(
+		"##Main",
+		0,
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoScrollbar
+	);
+
+
+	if (ImGui::Button( "LO", ImVec2( 100.0f, 100.0f ) )) {
+		getFullPath();
+	}
 
 	while (ImGui::Button( "Screenshot", ImVec2( 100.0f, 100.0f ) )) {
+		Beep( 750, 300 );
 		g_LDPlayer       = FindWindowW( L"LDPlayerMainFrame", NULL );
 		if (!g_LDPlayer || IsIconic( g_LDPlayer )) { MessageBeep( 0 );  break; }
 		g_LDPlayerRender = FindWindowExW( g_LDPlayer, 0, L"RenderWindow", L"TheRender" );
@@ -139,11 +154,34 @@ void tool() {
 		break;
 	}
 
+
+	wcstombs( buff, fullpath, wcslen( fullpath ) );
+	ImGui::InputText( "Path", buff, sizeof( buff ) );
+
+	ImGui::InputText( "Filename", file, sizeof( file ) );
+
+	if (ImGui::Button( "test" )) {
+
+		strcat( buff, std::format( "" ) );
+		strcat( buff, ".jpg" );
+	}
+
+
 	ImGui::End();
 }
 
 
 void snapshot() {
+
+	static bool snapshot{};
+	auto& io    = ImGui::GetIO();
+	auto& style = ImGui::GetStyle();
+
+	if (!snapshot) {
+		ImGui::SetNextWindowPos( ImVec2( 420, 100 ) );
+		snapshot = true;
+	}
+
 	static ImVec2 crop_min{};
 	static ImVec2 crop_min2{};
 	static ImVec2 crop_max{};
@@ -155,7 +193,6 @@ void snapshot() {
 	static float displayHeight = 540.0f;
 	static float displayWidth  = displayHeight * Aspect;
 
-	auto& style                = ImGui::GetStyle();
 	bool onClose               = true;
 	float imageAspect          = ( float )img->Width / ( float )img->Height;
 	float imageWidth           = displayHeight * imageAspect;
@@ -164,7 +201,15 @@ void snapshot() {
 
 	ImGui::SetNextWindowContentSize( displaySize );
 
-	if (!ImGui::Begin( "Result", &onClose, ImGuiWindowFlags_AlwaysAutoResize )) {
+	if (!ImGui::Begin(
+		"##Main2",
+		&onClose,
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_AlwaysAutoResize
+	)) {
 		ImGui::End();
 		return;
 	}
@@ -172,6 +217,7 @@ void snapshot() {
 	auto drawList = ImGui::GetWindowDrawList();
 
 	if (test && img) {
+
 		ImGui::SetCursorPosX( ImGui::GetCursorPosX() + fabs( displaySize.x - imageSize.x ) * .5f );
 		ImGui::Image( img->Texture, imageSize );
 		ImVec2 pos  = ImGui::GetItemRectMin();
@@ -195,7 +241,9 @@ void snapshot() {
 				auto uv1   = max / size;
 				auto s0    = uv0 * ImVec2( ( float )img->Width, ( float )img->Height );
 				auto s1    = uv1 * ImVec2( ( float )img->Width, ( float )img->Height );
-				imwrite( "p.jpg", target( Rect( s0.x, s0.y, s1.x - s0.x, s1.y - s0.y ) ) );
+
+				imwrite( buff, target( Rect( s0.x, s0.y, s1.x - s0.x, s1.y - s0.y ) ) );
+
 				cropState = 2;
 			}
 			else if (cropState == 2 && ImGui::IsMouseClicked( ImGuiMouseButton_Left, false )) {
@@ -232,10 +280,24 @@ int main( int, char** ) {
 	lpPlayerHWND = FindWindowW( L"LDPlayerMainFrame", 0 );
 	ldPlayerCrtlHWND = FindWindowExW( lpPlayerHWND, 0, L"RenderWindow", L"TheRender" );
 
-	ImGui_ImplWin32_EnableDpiAwareness();
+
+	// Create application window
+	//ImGui_ImplWin32_EnableDpiAwareness();
+	SetProcessDPIAware();
 	WNDCLASSEXW wc ={ sizeof( wc ), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle( NULL ), NULL, NULL, NULL, NULL, L"ImGui Example", NULL };
 	::RegisterClassExW( &wc );
-	HWND hwnd = ::CreateWindowW( wc.lpszClassName, L"Dear ImGui DirectX9 Example", WS_POPUP, 0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL );
+	HWND hwnd = ::CreateWindowW(
+		wc.lpszClassName,
+		L"Dear ImGui DirectX9 Example",
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+		100,
+		100,
+		1480,
+		800,
+		NULL,
+		NULL,
+		wc.hInstance,
+		NULL );
 
 	// Initialize Direct3D
 	if (!CreateDeviceD3D( hwnd )) {
@@ -252,71 +314,59 @@ int main( int, char** ) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); ( void )io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-	//io.ConfigViewportsNoAutoMerge = true;
-	//io.ConfigViewportsNoTaskBarIcon = true;
 
 	// Setup Dear ImGui style
-	//ImGui::StyleColorsDark();
-	ImGui::StyleColorsLight();
-
-	// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-	ImGuiStyle& style = ImGui::GetStyle();
-
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		style.WindowRounding = 0.0f;
-		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true;
-	}
-
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+	ImGui::SetNextWindowSize( ImVec2( io.DisplaySize.x, io.DisplaySize.y ) );
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init( hwnd );
 	ImGui_ImplDX9_Init( g_pd3dDevice );
+
+	// Load Fonts
+	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+	// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+	// - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+	// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+	// - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+	// - Read 'docs/FONTS.md' for more instructions and details.
+	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+	//io.Fonts->AddFontDefault();
+	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	//IM_ASSERT(font != NULL);
 
 	// Our state
 	bool show_demo_window = true;
 	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4( 0.45f, 0.55f, 0.60f, 1.00f );
-
 	// Main loop
 	bool done = false;
-	MSG msg;
-
 	while (!done) {
+		// Poll and handle messages (inputs, window resize, etc.)
+		// See the WndProc() function below for our to dispatch events to the Win32 backend.
+		MSG msg;
 		while (::PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE )) {
 			::TranslateMessage( &msg );
 			::DispatchMessage( &msg );
 			if (msg.message == WM_QUIT)
 				done = true;
 		}
-
 		if (done)
 			break;
 
+		// Start the Dear ImGui frame
 		ImGui_ImplDX9_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		// open Dialog Simple
-		if (ImGui::Button("Open File Dialog"))
-			ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", ".");
+		// show draw 
 
-		// display
-		if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
-			// action if OK
-			if (ImGuiFileDialog::Instance()->IsOk()) {
-				std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-				std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-				// action
-			}
-
-			// close
-			ImGuiFileDialog::Instance()->Close();
-		}
 
 		tool();
 
@@ -329,20 +379,11 @@ int main( int, char** ) {
 		g_pd3dDevice->SetRenderState( D3DRS_SCISSORTESTENABLE, FALSE );
 		D3DCOLOR clear_col_dx = D3DCOLOR_RGBA( ( int )( clear_color.x * clear_color.w * 255.0f ), ( int )( clear_color.y * clear_color.w * 255.0f ), ( int )( clear_color.z * clear_color.w * 255.0f ), ( int )( clear_color.w * 255.0f ) );
 		g_pd3dDevice->Clear( 0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0 );
-		if (g_pd3dDevice->BeginScene() >= 0)
-		{
+		if (g_pd3dDevice->BeginScene() >= 0) {
 			ImGui::Render();
 			ImGui_ImplDX9_RenderDrawData( ImGui::GetDrawData() );
 			g_pd3dDevice->EndScene();
 		}
-
-		// Update and Render additional Platform Windows
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-		}
-
 		HRESULT result = g_pd3dDevice->Present( NULL, NULL, NULL, NULL );
 
 		// Handle loss of D3D9 device
@@ -361,7 +402,7 @@ int main( int, char** ) {
 	return 0;
 }
 
-// Helper functions
+// Helper functions imgui
 
 bool CreateDeviceD3D( HWND hWnd )
 {
@@ -398,10 +439,6 @@ void ResetDevice()
 	ImGui_ImplDX9_CreateDeviceObjects();
 }
 
-#ifndef WM_DPICHANGED
-#define WM_DPICHANGED 0x02E0 // From Windows SDK 8.1+ headers
-#endif
-
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
@@ -415,11 +452,9 @@ LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 	if (ImGui_ImplWin32_WndProcHandler( hWnd, msg, wParam, lParam ))
 		return true;
 
-	switch (msg)
-	{
+	switch (msg) {
 	case WM_SIZE:
-		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
-		{
+		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED) {
 			g_d3dpp.BackBufferWidth = LOWORD( lParam );
 			g_d3dpp.BackBufferHeight = HIWORD( lParam );
 			ResetDevice();
@@ -432,15 +467,6 @@ LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 	case WM_DESTROY:
 		::PostQuitMessage( 0 );
 		return 0;
-	case WM_DPICHANGED:
-		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DpiEnableScaleViewports)
-		{
-			//const int dpi = HIWORD(wParam);
-			//printf("WM_DPICHANGED to %d (%.0f%%)\n", dpi, (float)dpi / 96.0f * 100.0f);
-			const RECT* suggested_rect = ( RECT* )lParam;
-			::SetWindowPos( hWnd, NULL, suggested_rect->left, suggested_rect->top, suggested_rect->right - suggested_rect->left, suggested_rect->bottom - suggested_rect->top, SWP_NOZORDER | SWP_NOACTIVATE );
-		}
-		break;
 	}
 	return ::DefWindowProc( hWnd, msg, wParam, lParam );
 }

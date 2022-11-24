@@ -30,5 +30,9 @@
 // Autoit
 #include "autoit/AutoItX3_DLL.h"
 
-// ImGuiFileDialog
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
+#include <windows.h>
+#include <shobjidl.h> 
+#include <format>
+#include <iostream>
+#include <string>
+#include <string_view>
