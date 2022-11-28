@@ -45,6 +45,9 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>3rdparty\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="imgui\imgui_stdlib.cpp">
+      <Filter>3rdparty\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -78,6 +81,9 @@
       <Filter>3rdparty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imstb_truetype.h">
+      <Filter>3rdparty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_stdlib.h">
       <Filter>3rdparty\imgui</Filter>
     </ClInclude>
   </ItemGroup>

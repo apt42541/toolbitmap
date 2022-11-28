@@ -22,7 +22,7 @@
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_internal.h"
-
+#include "imgui/imgui_stdlib.h"
 // STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h";

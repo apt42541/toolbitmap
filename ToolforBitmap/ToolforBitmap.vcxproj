@@ -156,9 +156,9 @@ xcopy "$(ProjectDir)opencv\bin\" "$(SolutionDir)bin\" /S /H /Y /R</Command>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalLibraryDirectories>$(ProjectDIR)autoit\lib\x64;$(ProjectDIR)opencv\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>d3d9.lib;opencv_world460d.lib;AutoItX3_x64_DLL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
     <PreBuildEvent>
       <Command>xcopy "$(ProjectDir)autoit\bin\" "$(SolutionDir)bin\" /S /H /Y /R
@@ -198,6 +198,7 @@ xcopy "$(ProjectDir)opencv\bin\" "$(SolutionDir)bin\" /S /H /Y /R</Command>
     <ClCompile Include="imgui\imgui_draw.cpp" />
     <ClCompile Include="imgui\imgui_impl_dx9.cpp" />
     <ClCompile Include="imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui\imgui_stdlib.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -210,6 +211,7 @@ xcopy "$(ProjectDir)opencv\bin\" "$(SolutionDir)bin\" /S /H /Y /R</Command>
     <ClInclude Include="imgui\imgui_impl_dx9.h" />
     <ClInclude Include="imgui\imgui_impl_win32.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
+    <ClInclude Include="imgui\imgui_stdlib.h" />
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
